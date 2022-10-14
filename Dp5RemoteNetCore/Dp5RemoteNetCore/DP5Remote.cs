@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using System.Linq;
+using System.Threading;
 
 /// <summary>
 /// This namespace contains code to access the DP5 remote API via the RESTful interface.  The API has more functions than shown
@@ -33,13 +34,26 @@ namespace DP5RemoteNetCore
         {
         }
 
+        void startNotifications()
+        {
+            Task.Factory.StartNew(
+              async () =>
+              {
+                  await NotificationClient.createNotificationClient();
+              }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
         /// <summary>
         /// Sample code to interact with DP5; this queris some parameters and executes a scan.
         /// </summary>
         /// <param name="args"></param>
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            DP5Remote dp5Remote = new DP5Remote();
+            DP5Remote dp5Remote = new DP5Remote();  
+
+            Thread thread1 = new Thread(dp5Remote.startNotifications);
+            thread1.Start();
+
             Console.WriteLine($"Version = {dp5Remote.Version}");
             Console.WriteLine($"Sttaus = {dp5Remote.Status}");
             Console.WriteLine($"Licence = {dp5Remote.Licence}");
@@ -48,7 +62,7 @@ namespace DP5RemoteNetCore
             string uid = containers.FirstOrDefault()?["uid"].Value<string>();
             Console.WriteLine($"scanning {uid}");
             Console.WriteLine(dp5Remote.scan(uid));
-            dp5Remote.shutdown();
+         
         }
 
 
